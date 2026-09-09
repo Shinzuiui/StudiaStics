@@ -235,3 +235,35 @@ form button {
 .empty {
   color: #7A7368;
 }
+
+@media (max-width: 480px) {
+  .app {
+    padding: 0 14px 40px;
+  }
+
+  header {
+    padding: 20px 0 12px;
+  }
+
+  header h1 {
+    font-size: 1.25rem;
+  }
+
+  .timer-display {
+    font-size: 1.9rem;
+  }
+
+  .manual-block {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .add-ramo {
+    flex-direction: column;
+  }
+
+  .day-header {
+    font-size: 0.95rem;
+  }
+}

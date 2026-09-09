@@ -30,7 +30,9 @@ export default function SessionForm({ userId, onSaved }) {
 
   async function loadRamos() {
     const { data, error } = await supabase.from('ramos').select('*').order('nombre')
-    if (!error && data) {
+    if (error) {
+      setMessage('No se pudieron cargar tus ramos: ' + error.message)
+    } else if (data) {
       setRamos(data)
       if (data.length && !ramoId) setRamoId(data[0].id)
     }

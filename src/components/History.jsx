@@ -4,6 +4,7 @@ import { supabase } from '../supabaseClient'
 export default function History({ userId, refreshKey }) {
   const [sesiones, setSesiones] = useState([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
 
   useEffect(() => {
     loadSesiones()
@@ -11,15 +12,28 @@ export default function History({ userId, refreshKey }) {
 
   async function loadSesiones() {
     setLoading(true)
+    setError(null)
     const { data, error } = await supabase
       .from('sesiones')
       .select('id, fecha, duracion_minutos, metodo, ramos ( nombre, color )')
       .order('fecha', { ascending: false })
-    if (!error && data) setSesiones(data)
+    if (error) {
+      setError(error.message)
+    } else if (data) {
+      setSesiones(data)
+    }
     setLoading(false)
   }
 
   if (loading) return <p>Cargando historial…</p>
+  if (error) {
+    return (
+      <div className="empty">
+        <p>No se pudo cargar el historial: {error}</p>
+        <button onClick={loadSesiones}>Reintentar</button>
+      </div>
+    )
+  }
   if (sesiones.length === 0) return <p className="empty">Todavía no registras ninguna sesión.</p>
 
   const byDate = sesiones.reduce((acc, s) => {
