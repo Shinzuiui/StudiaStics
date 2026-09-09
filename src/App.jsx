@@ -5,6 +5,7 @@ import SessionForm from './components/SessionForm'
 import History from './components/History'
 import Stats from './components/Stats'
 import ThemeToggle from './components/ThemeToggle'
+import DesignToggle from './components/DesignToggle'
 import './App.css'
 
 function App() {
@@ -49,55 +50,64 @@ function App() {
   }
 
   return (
-    <div className="app">
-      <header>
-        <h1 className="logo">StudiaStics</h1>
-        <div className="header-actions">
-          <ThemeToggle />
-          <button className="logout" onClick={() => supabase.auth.signOut()}>
-            Cerrar sesión
-          </button>
+    <div className="app-container">
+      <aside className="app-nav">
+        <div className="nav-header">
+          <h1 className="logo">StudiaStics</h1>
+          <div className="header-actions">
+            <DesignToggle />
+            <ThemeToggle />
+            <button className="logout" onClick={() => supabase.auth.signOut()} title="Cerrar sesión">
+              <span className="logout-icon">🚪</span>
+            </button>
+          </div>
         </div>
-      </header>
 
-      <nav className="tabs">
-        <button
-          className={activeTab === 'registrar' ? 'active' : ''}
-          onClick={() => setActiveTab('registrar')}
-        >
-          Registrar {timerRunning && <span className="timer-dot">●</span>}
-        </button>
-        <button
-          className={activeTab === 'historial' ? 'active' : ''}
-          onClick={() => setActiveTab('historial')}
-        >
-          Historial
-        </button>
-        <button
-          className={activeTab === 'estadisticas' ? 'active' : ''}
-          onClick={() => setActiveTab('estadisticas')}
-        >
-          Estadísticas
-        </button>
-      </nav>
+        <nav className="tabs">
+          <button
+            className={activeTab === 'registrar' ? 'active' : ''}
+            onClick={() => setActiveTab('registrar')}
+          >
+            <span className="tab-icon">⏱️</span>
+            <span className="tab-label">Registrar</span>
+            {timerRunning && <span className="timer-dot">●</span>}
+          </button>
+          <button
+            className={activeTab === 'historial' ? 'active' : ''}
+            onClick={() => setActiveTab('historial')}
+          >
+            <span className="tab-icon">📅</span>
+            <span className="tab-label">Historial</span>
+          </button>
+          <button
+            className={activeTab === 'estadisticas' ? 'active' : ''}
+            onClick={() => setActiveTab('estadisticas')}
+          >
+            <span className="tab-icon">📊</span>
+            <span className="tab-label">Estadísticas</span>
+          </button>
+        </nav>
+      </aside>
 
-      <main>
-        {activeTab === 'registrar' && (
-          <SessionForm
-            userId={userId}
-            onSaved={handleSaved}
-            timerSeconds={timerSeconds}
-            setTimerSeconds={setTimerSeconds}
-            timerRunning={timerRunning}
-            setTimerRunning={setTimerRunning}
-          />
-        )}
-        {activeTab === 'historial' && (
-          <History userId={userId} refreshKey={refreshKey} />
-        )}
-        {activeTab === 'estadisticas' && (
-          <Stats userId={userId} refreshKey={refreshKey} />
-        )}
+      <main className="app-main">
+        <div className="main-content">
+          {activeTab === 'registrar' && (
+            <SessionForm
+              userId={userId}
+              onSaved={handleSaved}
+              timerSeconds={timerSeconds}
+              setTimerSeconds={setTimerSeconds}
+              timerRunning={timerRunning}
+              setTimerRunning={setTimerRunning}
+            />
+          )}
+          {activeTab === 'historial' && (
+            <History userId={userId} refreshKey={refreshKey} />
+          )}
+          {activeTab === 'estadisticas' && (
+            <Stats userId={userId} refreshKey={refreshKey} />
+          )}
+        </div>
       </main>
     </div>
   )

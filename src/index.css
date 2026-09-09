@@ -69,3 +69,41 @@ a {
 a:hover {
   text-decoration: underline;
 }
+
+/* 🔮 Glassmorphism Variables */
+[data-design="glass"] {
+  --glass-bg-1: #bae6fd; /* Baby blue ligeramente saturado */
+  --glass-bg-2: #e9d5ff; /* Morado/rosado suave */
+  --glass-bg-3: #a5f3fc; /* Cian suave */
+  
+  --glass-panel: rgba(255, 255, 255, 0.15); /* Menos opacidad = más transparencia de cristal */
+  --glass-border: rgba(255, 255, 255, 0.45);
+  --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15); /* Sombra suave para despegar el cristal */
+  --glass-blur: blur(20px);
+  --glass-panel-hover: rgba(255, 255, 255, 0.35);
+}
+
+[data-design="glass"][data-theme="dark"] {
+  --glass-bg-1: #1e293b; /* Azul oscuro */
+  --glass-bg-2: #4c1d95; /* Morado profundo */
+  --glass-bg-3: #0f172a; /* Slate oscuro */
+
+  --glass-panel: rgba(0, 0, 0, 0.25);
+  --glass-border: rgba(255, 255, 255, 0.12);
+  --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
+  --glass-blur: blur(20px);
+  --glass-panel-hover: rgba(0, 0, 0, 0.35);
+}
+
+[data-design="glass"] body {
+  background: linear-gradient(135deg, var(--glass-bg-1), var(--glass-bg-2), var(--glass-bg-3));
+  background-size: 300% 300%;
+  animation: meshAnim 30s ease infinite; /* Animación mucho más lenta y relajada */
+  background-attachment: fixed;
+}
+
+@keyframes meshAnim {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
