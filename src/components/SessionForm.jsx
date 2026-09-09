@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { supabase } from '../supabaseClient'
 import { getLocalDate } from '../utils'
 
-const COLORS = ['#2F6F4F', '#C9A227', '#3A6EA5', '#A5443A', '#6E4A9E']
+const COLORS = ['#7EB6FF', '#C4A1E0', '#34C759', '#FF9F43', '#E5484D', '#3A6EA5', '#8B5CF6', '#EC4899']
 
 export default function SessionForm({ userId, onSaved, timerSeconds, setTimerSeconds, timerRunning, setTimerRunning }) {
   const [ramos, setRamos] = useState([])
@@ -43,6 +43,47 @@ export default function SessionForm({ userId, onSaved, timerSeconds, setTimerSec
       setRamos((prev) => [...prev, data])
       setRamoId(data.id)
       setNewRamo('')
+    }
+  }
+
+  async function deleteRamo() {
+    if (!ramoId) return
+    const ramo = ramos.find((r) => r.id === ramoId)
+    if (!ramo) return
+
+    // Count associated sessions
+    const { count } = await supabase
+      .from('sesiones')
+      .select('*', { count: 'exact', head: true })
+      .eq('ramo_id', ramoId)
+
+    const msg =
+      count > 0
+        ? `¿Eliminar "${ramo.nombre}" y sus ${count} sesiones? No se puede deshacer.`
+        : `¿Eliminar "${ramo.nombre}"? No se puede deshacer.`
+
+    if (!window.confirm(msg)) return
+    setMessage(null)
+
+    // Delete associated sessions first (foreign key constraint)
+    if (count > 0) {
+      const { error: sessErr } = await supabase.from('sesiones').delete().eq('ramo_id', ramoId)
+      if (sessErr) {
+        setMessage('Error al eliminar sesiones: ' + sessErr.message)
+        return
+      }
+    }
+
+    // Then delete the ramo
+    const { error: ramoErr } = await supabase.from('ramos').delete().eq('id', ramoId)
+    if (ramoErr) {
+      setMessage('Error al eliminar ramo: ' + ramoErr.message)
+    } else {
+      const updated = ramos.filter((r) => r.id !== ramoId)
+      setRamos(updated)
+      setRamoId(updated.length ? updated[0].id : '')
+      setMessage(`"${ramo.nombre}" eliminado.`)
+      onSaved?.()
     }
   }
 
@@ -95,17 +136,29 @@ export default function SessionForm({ userId, onSaved, timerSeconds, setTimerSec
         </button>
       </div>
 
-      <label className="field">
-        Ramo
-        <select value={ramoId} onChange={(e) => setRamoId(e.target.value)}>
-          {ramos.length === 0 && <option value="">Sin ramos todavía</option>}
-          {ramos.map((r) => (
-            <option key={r.id} value={r.id}>
-              {r.nombre}
-            </option>
-          ))}
-        </select>
-      </label>
+      <div className="ramo-selector">
+        <label className="field">
+          Ramo
+          <select value={ramoId} onChange={(e) => setRamoId(e.target.value)}>
+            {ramos.length === 0 && <option value="">Sin ramos todavía</option>}
+            {ramos.map((r) => (
+              <option key={r.id} value={r.id}>
+                {r.nombre}
+              </option>
+            ))}
+          </select>
+        </label>
+        {ramoId && (
+          <button
+            className="delete-ramo-btn"
+            onClick={deleteRamo}
+            title="Eliminar ramo seleccionado"
+            aria-label="Eliminar ramo"
+          >
+            ✕
+          </button>
+        )}
+      </div>
 
       <form className="add-ramo" onSubmit={addRamo}>
         <input
