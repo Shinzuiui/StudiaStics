@@ -236,6 +236,18 @@ form button {
   color: #7A7368;
 }
 
+.delete-btn {
+  background: none;
+  border: none;
+  color: #B0A99A;
+  font-size: 0.9rem;
+  padding: 2px 6px;
+}
+
+.delete-btn:hover {
+  color: var(--error);
+}
+
 @media (max-width: 480px) {
   .app {
     padding: 0 14px 40px;
@@ -266,4 +278,364 @@ form button {
   .day-header {
     font-size: 0.95rem;
   }
+
+  .stats-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .goal-form {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .streak-banner {
+    flex-wrap: wrap;
+  }
 }
+
+/* ============================= */
+/*  Timer dot (pulsing indicator) */
+/* ============================= */
+
+.timer-dot {
+  color: var(--error);
+  margin-left: 6px;
+  font-size: 0.7rem;
+  animation: pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+/* ============================= */
+/*  Stats Dashboard               */
+/* ============================= */
+
+.stats-dashboard {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.stats-summary {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.stat-card {
+  border: 1px solid var(--line);
+  padding: 18px 14px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.stat-value {
+  font-family: Georgia, serif;
+  font-size: 1.5rem;
+  color: var(--ink);
+}
+
+.stat-label {
+  font-size: 0.78rem;
+  color: #7A7368;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* ============================= */
+/*  Goal Section                  */
+/* ============================= */
+
+.goal-section {
+  border: 1px solid var(--line);
+  padding: 16px 20px;
+}
+
+.goal-current {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.95rem;
+}
+
+.goal-icon {
+  font-size: 1.2rem;
+}
+
+.goal-placeholder {
+  color: #7A7368;
+}
+
+.goal-edit-btn {
+  margin-left: auto;
+  background: none;
+  border: 1px solid var(--line);
+  padding: 5px 14px;
+  font-size: 0.82rem;
+  color: var(--ink);
+}
+
+.goal-edit-btn:hover {
+  border-color: var(--forest);
+  color: var(--forest);
+}
+
+.goal-form {
+  display: flex;
+  gap: 12px;
+  align-items: end;
+}
+
+.goal-form .field {
+  flex: 1;
+  margin-bottom: 0;
+}
+
+.goal-form-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.goal-cancel-btn {
+  background: none !important;
+  border: 1px solid var(--line) !important;
+  color: var(--ink) !important;
+}
+
+.goal-cancel-btn:hover {
+  border-color: var(--error) !important;
+}
+
+/* ============================= */
+/*  Streak Banner                 */
+/* ============================= */
+
+.streak-banner {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 20px;
+  border: 1px solid var(--line);
+  transition: background 0.3s ease, border-color 0.3s ease;
+}
+
+.streak-none {
+  background: var(--paper-alt);
+}
+
+.streak-bronze {
+  background: linear-gradient(135deg, #F5E6D3, #ECDCC8);
+  border-color: #C9A96E;
+}
+
+.streak-silver {
+  background: linear-gradient(135deg, #EAEAEE, #D8D8DE);
+  border-color: #A1A1AA;
+}
+
+.streak-gold {
+  background: linear-gradient(135deg, #FEF3C7, #FDE68A);
+  border-color: var(--gold);
+}
+
+.streak-flame {
+  font-size: 1.6rem;
+  line-height: 1;
+}
+
+.streak-info {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex: 1;
+}
+
+.streak-count {
+  font-family: Georgia, serif;
+  font-size: 1.8rem;
+}
+
+.streak-label {
+  font-size: 0.88rem;
+  color: #7A7368;
+}
+
+.streak-badge-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  color: #5A5248;
+}
+
+/* ============================= */
+/*  Heatmap                       */
+/* ============================= */
+
+.heatmap-section h3,
+.charts-section h3 {
+  font-family: Georgia, serif;
+  font-weight: normal;
+  font-size: 1.1rem;
+  margin: 0 0 12px;
+}
+
+.heatmap-outer {
+  display: flex;
+  gap: 6px;
+}
+
+.heatmap-ylabels {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-top: 20px;
+  flex-shrink: 0;
+}
+
+.heatmap-ylabels span {
+  font-size: 0.62rem;
+  color: #7A7368;
+  height: 11px;
+  line-height: 11px;
+}
+
+.heatmap-scroll {
+  overflow-x: auto;
+  flex: 1;
+  padding-bottom: 4px;
+}
+
+.heatmap-inner {
+  position: relative;
+  padding-top: 20px;
+  display: inline-block;
+}
+
+.heatmap-months {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 18px;
+}
+
+.heatmap-months span {
+  position: absolute;
+  font-size: 0.68rem;
+  color: #7A7368;
+  white-space: nowrap;
+}
+
+.heatmap-grid {
+  display: grid;
+  grid-template-rows: repeat(7, 11px);
+  grid-auto-flow: column;
+  grid-auto-columns: 11px;
+  gap: 2px;
+}
+
+.hm-cell {
+  width: 11px;
+  height: 11px;
+  border-radius: 2px;
+  transition: outline 0.1s ease;
+}
+
+.hm-cell:hover {
+  outline: 2px solid var(--ink);
+  outline-offset: -1px;
+}
+
+.hm-cell.level-0 { background: #EBEDF0; }
+.hm-cell.level-1 { background: #9BE9A8; }
+.hm-cell.level-2 { background: #40C463; }
+.hm-cell.level-3 { background: #30A14E; }
+.hm-cell.level-4 { background: #216E39; }
+
+.hm-cell.goal-met {
+  box-shadow: inset 0 0 0 2px var(--gold);
+}
+
+.heatmap-legend {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  justify-content: flex-end;
+  margin-top: 8px;
+  font-size: 0.68rem;
+  color: #7A7368;
+}
+
+.heatmap-legend span {
+  margin: 0 2px;
+}
+
+.heatmap-legend .hm-cell {
+  cursor: default;
+}
+
+.heatmap-legend .hm-cell:hover {
+  outline: none;
+}
+
+/* ============================= */
+/*  Charts                        */
+/* ============================= */
+
+.charts-section {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.chart-card {
+  border: 1px solid var(--line);
+  padding: 20px 16px 12px;
+}
+
+.chart-wrapper {
+  margin: 0 -8px;
+}
+
+/* Custom Recharts tooltip */
+.chart-tooltip {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  padding: 10px 14px;
+  font-size: 0.82rem;
+  line-height: 1.5;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+
+.chart-tooltip p {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.chart-tooltip-title {
+  font-weight: 600;
+  margin-bottom: 4px !important;
+}
+
+.chart-tooltip-total {
+  margin-top: 4px !important;
+  padding-top: 4px;
+  border-top: 1px solid var(--line);
+  font-weight: 600;
+}
+
+.chart-tooltip-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
