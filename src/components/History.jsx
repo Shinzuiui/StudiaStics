@@ -5,6 +5,8 @@ export default function History({ userId, refreshKey }) {
   const [sesiones, setSesiones] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [actionError, setActionError] = useState(null)
+  const [deletingId, setDeletingId] = useState(null)
 
   useEffect(() => {
     loadSesiones()
@@ -17,12 +19,26 @@ export default function History({ userId, refreshKey }) {
       .from('sesiones')
       .select('id, fecha, duracion_minutos, metodo, ramos ( nombre, color )')
       .order('fecha', { ascending: false })
+      .limit(200)
     if (error) {
       setError(error.message)
     } else if (data) {
       setSesiones(data)
     }
     setLoading(false)
+  }
+
+  async function handleDelete(id) {
+    if (!window.confirm('¿Eliminar esta sesión? No se puede deshacer.')) return
+    setActionError(null)
+    setDeletingId(id)
+    const { error } = await supabase.from('sesiones').delete().eq('id', id)
+    setDeletingId(null)
+    if (error) {
+      setActionError('No se pudo eliminar: ' + error.message)
+    } else {
+      setSesiones((prev) => prev.filter((s) => s.id !== id))
+    }
   }
 
   if (loading) return <p>Cargando historial…</p>
@@ -44,6 +60,7 @@ export default function History({ userId, refreshKey }) {
 
   return (
     <div className="history">
+      {actionError && <p className="error">{actionError}</p>}
       {Object.entries(byDate).map(([fecha, items]) => {
         const totalMin = items.reduce((sum, s) => sum + s.duracion_minutos, 0)
         return (
@@ -59,6 +76,14 @@ export default function History({ userId, refreshKey }) {
                   <span className="ramo-name">{s.ramos?.nombre || 'Sin ramo'}</span>
                   <span className="duracion">{s.duracion_minutos} min</span>
                   <span className="metodo">{s.metodo}</span>
+                  <button
+                    className="delete-btn"
+                    onClick={() => handleDelete(s.id)}
+                    disabled={deletingId === s.id}
+                    aria-label="Eliminar sesión"
+                  >
+                    {deletingId === s.id ? '…' : '✕'}
+                  </button>
                 </li>
               ))}
             </ul>

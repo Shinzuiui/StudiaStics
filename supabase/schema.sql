@@ -39,3 +39,27 @@ create policy "Users can manage their own sesiones"
 grant usage on schema public to authenticated;
 grant select, insert, update, delete on table public.ramos to authenticated;
 grant select, insert, update, delete on table public.sesiones to authenticated;
+
+-- ────────────────────────────────────────────
+-- Tabla de metas diarias (Fase 1)
+-- NOTA: ejecutar este bloque por separado en SQL Editor
+--       si las tablas ramos/sesiones ya existen.
+-- ────────────────────────────────────────────
+
+create table metas (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references auth.users not null,
+  meta_minutos integer not null check (meta_minutos > 0),
+  fecha_inicio date not null default current_date,
+  created_at timestamptz default now()
+);
+
+alter table metas enable row level security;
+
+create policy "Users can manage their own metas"
+  on metas for all
+  using (auth.uid() = user_id)
+  with check (auth.uid() = user_id);
+
+grant usage on schema public to authenticated;
+grant select, insert, update, delete on table public.metas to authenticated;

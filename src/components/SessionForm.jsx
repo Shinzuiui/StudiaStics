@@ -1,32 +1,21 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { supabase } from '../supabaseClient'
+import { getLocalDate } from '../utils'
 
 const COLORS = ['#2F6F4F', '#C9A227', '#3A6EA5', '#A5443A', '#6E4A9E']
 
-export default function SessionForm({ userId, onSaved }) {
+export default function SessionForm({ userId, onSaved, timerSeconds, setTimerSeconds, timerRunning, setTimerRunning }) {
   const [ramos, setRamos] = useState([])
   const [ramoId, setRamoId] = useState('')
   const [newRamo, setNewRamo] = useState('')
   const [mode, setMode] = useState('timer') // 'timer' | 'manual'
-  const [running, setRunning] = useState(false)
-  const [seconds, setSeconds] = useState(0)
   const [manualMinutes, setManualMinutes] = useState('')
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState(null)
-  const intervalRef = useRef(null)
 
   useEffect(() => {
     loadRamos()
   }, [])
-
-  useEffect(() => {
-    if (running) {
-      intervalRef.current = setInterval(() => setSeconds((s) => s + 1), 1000)
-    } else {
-      clearInterval(intervalRef.current)
-    }
-    return () => clearInterval(intervalRef.current)
-  }, [running])
 
   async function loadRamos() {
     const { data, error } = await supabase.from('ramos').select('*').order('nombre')
@@ -75,11 +64,12 @@ export default function SessionForm({ userId, onSaved }) {
     }
     setSaving(true)
     setMessage(null)
+    const durationRounded = Math.max(1, Math.round(durationMinutes))
     const { error } = await supabase.from('sesiones').insert({
       ramo_id: ramoId,
       user_id: userId,
-      fecha: new Date().toISOString().slice(0, 10),
-      duracion_minutos: Math.round(durationMinutes),
+      fecha: getLocalDate(),
+      duracion_minutos: durationRounded,
       metodo,
     })
     setSaving(false)
@@ -87,7 +77,8 @@ export default function SessionForm({ userId, onSaved }) {
       setMessage('Error al guardar: ' + error.message)
     } else {
       setMessage('Sesión guardada.')
-      setSeconds(0)
+      setTimerSeconds(0)
+      setTimerRunning(false)
       setManualMinutes('')
       onSaved?.()
     }
@@ -128,16 +119,16 @@ export default function SessionForm({ userId, onSaved }) {
 
       {mode === 'timer' ? (
         <div className="timer-block">
-          <div className="timer-display">{formatTime(seconds)}</div>
+          <div className="timer-display">{formatTime(timerSeconds)}</div>
           <div className="timer-actions">
-            {!running ? (
-              <button onClick={() => setRunning(true)}>Iniciar</button>
+            {!timerRunning ? (
+              <button onClick={() => setTimerRunning(true)}>Iniciar</button>
             ) : (
-              <button onClick={() => setRunning(false)}>Pausar</button>
+              <button onClick={() => setTimerRunning(false)}>Pausar</button>
             )}
             <button
-              disabled={saving || seconds === 0}
-              onClick={() => saveSession(seconds / 60, 'timer')}
+              disabled={saving || timerSeconds === 0}
+              onClick={() => saveSession(timerSeconds / 60, 'timer')}
             >
               Guardar sesión
             </button>
