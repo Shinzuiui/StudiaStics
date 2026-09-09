@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { supabase } from '../supabaseClient'
 import ThemeToggle from './ThemeToggle'
+import DesignToggle from './DesignToggle'
 
 export default function Auth() {
   const [loading, setLoading] = useState(false)
@@ -30,6 +31,7 @@ export default function Auth() {
   return (
     <div className="auth-wrapper">
       <div className="auth-floating-toggle">
+        <DesignToggle />
         <ThemeToggle />
       </div>
       <div className="auth-card">
