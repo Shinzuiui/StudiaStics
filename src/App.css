@@ -203,23 +203,37 @@
   [data-design="glass"] .app-container {
     flex-direction: column;
     height: 100vh;
+    height: 100dvh;
   }
   [data-design="glass"] .app-nav {
     width: auto;
-    padding: 16px 20px;
+    padding: 0;
     margin: 16px 16px 0 16px;
     height: auto;
-    border-radius: 20px;
-    flex-direction: row;
-    align-items: center;
-    justify-content: space-between;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    border-radius: 0;
+    display: block;
+    z-index: 10;
   }
   [data-design="glass"] .nav-header {
+    background: var(--glass-panel);
+    backdrop-filter: var(--glass-blur);
+    -webkit-backdrop-filter: var(--glass-blur);
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--glass-shadow);
+    border-radius: 20px;
+    padding: 12px 18px;
+    display: flex;
     flex-direction: row;
     gap: 16px;
     align-items: center;
     width: 100%;
     justify-content: space-between;
+    box-sizing: border-box;
   }
   [data-design="glass"] .logout-text {
     display: none;
@@ -232,7 +246,7 @@
     flex-direction: row;
     margin-top: 0;
     position: fixed;
-    bottom: 24px;
+    bottom: calc(16px + env(safe-area-inset-bottom, 0px));
     left: 16px;
     right: 16px;
     background: var(--glass-panel);
@@ -241,15 +255,15 @@
     border: 1px solid var(--glass-border);
     box-shadow: var(--glass-shadow);
     border-radius: 24px;
-    padding: 12px 16px;
+    padding: 10px 14px;
     justify-content: space-around;
-    z-index: 100;
+    z-index: 1000;
   }
   [data-design="glass"] .tabs button {
     flex-direction: column;
-    gap: 6px;
-    padding: 8px 16px;
-    font-size: 0.75rem;
+    gap: 4px;
+    padding: 6px 14px;
+    font-size: 0.72rem;
   }
   [data-design="glass"] .tabs button.active::before {
     display: none;
@@ -258,7 +272,7 @@
     background: var(--glass-panel-hover);
   }
   [data-design="glass"] .app-main {
-    padding: 24px 16px 160px; /* space for floating bottom nav */
+    padding: 16px 16px calc(90px + env(safe-area-inset-bottom, 0px)); /* space for floating bottom nav */
   }
 }
 
