@@ -35,3 +35,7 @@ create policy "Users can manage their own sesiones"
   on sesiones for all
   using (auth.uid() = user_id)
   with check (auth.uid() = user_id);
+
+grant usage on schema public to authenticated;
+grant select, insert, update, delete on table public.ramos to authenticated;
+grant select, insert, update, delete on table public.sesiones to authenticated;

@@ -41,13 +41,16 @@ export default function SessionForm({ userId, onSaved }) {
   async function addRamo(e) {
     e.preventDefault()
     if (!newRamo.trim()) return
+    setMessage(null)
     const color = COLORS[ramos.length % COLORS.length]
     const { data, error } = await supabase
       .from('ramos')
       .insert({ nombre: newRamo.trim(), color, user_id: userId })
       .select()
       .single()
-    if (!error && data) {
+    if (error) {
+      setMessage('No se pudo agregar el ramo: ' + error.message)
+    } else if (data) {
       setRamos((prev) => [...prev, data])
       setRamoId(data.id)
       setNewRamo('')
