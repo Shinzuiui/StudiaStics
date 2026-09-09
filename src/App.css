@@ -258,7 +258,7 @@
     background: var(--glass-panel-hover);
   }
   [data-design="glass"] .app-main {
-    padding: 24px 16px 120px; /* space for floating bottom nav */
+    padding: 24px 16px 160px; /* space for floating bottom nav */
   }
 }
 
@@ -448,6 +448,79 @@ button:disabled {
   margin-top: 12px;
   padding: 14px;
   font-size: 1.1rem;
+}
+
+/* ============================= */
+/*  Pomodoro UI                   */
+/* ============================= */
+
+.pomo-config {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 32px;
+}
+.pomo-config .field {
+  flex: 1;
+  margin-bottom: 0;
+}
+.pomo-status {
+  font-weight: 700;
+  color: var(--text-muted);
+  margin-bottom: 24px;
+}
+
+/* Minimalist Pomodoro */
+[data-design="minimal"] .pomo-ring-svg {
+  display: none;
+}
+[data-design="minimal"] .pomo-progress-wrapper {
+  margin-bottom: 16px;
+}
+[data-design="minimal"] .pomo-linear-bar {
+  height: 8px;
+  background: var(--bg-alt);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  margin-bottom: 24px;
+  overflow: hidden;
+}
+[data-design="minimal"] .pomo-linear-bar > div {
+  height: 100%;
+  transition: width 1s linear, background 0.3s ease;
+}
+
+/* Glassmorphism Pomodoro */
+[data-design="glass"] .pomo-linear-bar {
+  display: none;
+}
+[data-design="glass"] .pomo-progress-wrapper {
+  position: relative;
+  width: 250px;
+  height: 250px;
+  margin: 0 auto 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+[data-design="glass"] .pomo-ring-svg {
+  position: absolute;
+  top: 0; left: 0; width: 100%; height: 100%;
+  transform: rotate(-90deg);
+}
+[data-design="glass"] .pomo-ring-bg {
+  fill: none;
+  stroke: var(--glass-border);
+  stroke-width: 6;
+}
+[data-design="glass"] .pomo-ring-progress {
+  fill: none;
+  stroke-width: 6;
+  stroke-linecap: round;
+  transition: stroke-dashoffset 1s linear, stroke 0.3s ease;
+}
+[data-design="glass"] .pomo-progress-wrapper .timer-display {
+  margin-bottom: 0; /* Override timer-display margin */
+  font-size: 4rem; /* Slightly smaller to fit circle */
 }
 
 /* ============================= */

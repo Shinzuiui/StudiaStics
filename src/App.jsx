@@ -17,6 +17,12 @@ function App() {
   const [timerSeconds, setTimerSeconds] = useState(0)
   const [timerRunning, setTimerRunning] = useState(false)
 
+  // Pomodoro global state
+  const [pomoPhase, setPomoPhase] = useState('study') // 'study' | 'break'
+  const [pomoRunning, setPomoRunning] = useState(false)
+  const [pomoConfig, setPomoConfig] = useState({ study: 25, break: 5 })
+  const [pomoSecondsLeft, setPomoSecondsLeft] = useState(25 * 60)
+
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session)
@@ -33,11 +39,19 @@ function App() {
       interval = setInterval(() => {
         setTimerSeconds((prev) => prev + 1)
       }, 1000)
-    } else if (!timerRunning && timerSeconds !== 0) {
-      clearInterval(interval)
+    } else if (pomoRunning) {
+      interval = setInterval(() => {
+        setPomoSecondsLeft((prev) => {
+          if (prev <= 1) {
+            setPomoRunning(false)
+            return 0
+          }
+          return prev - 1
+        })
+      }, 1000)
     }
     return () => clearInterval(interval)
-  }, [timerRunning, timerSeconds])
+  }, [timerRunning, pomoRunning])
 
   if (!session) {
     return <Auth />
@@ -99,6 +113,14 @@ function App() {
               setTimerSeconds={setTimerSeconds}
               timerRunning={timerRunning}
               setTimerRunning={setTimerRunning}
+              pomoPhase={pomoPhase}
+              setPomoPhase={setPomoPhase}
+              pomoRunning={pomoRunning}
+              setPomoRunning={setPomoRunning}
+              pomoConfig={pomoConfig}
+              setPomoConfig={setPomoConfig}
+              pomoSecondsLeft={pomoSecondsLeft}
+              setPomoSecondsLeft={setPomoSecondsLeft}
             />
           )}
           {activeTab === 'historial' && (
