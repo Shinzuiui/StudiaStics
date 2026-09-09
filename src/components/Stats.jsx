@@ -44,7 +44,7 @@ export default function Stats({ userId, refreshKey }) {
 
     if (sessionsRes.data) setSessions(sessionsRes.data)
     if (ramosRes.data) setRamos(ramosRes.data)
-    if (goalRes.data) setGoal(goalRes.data)
+    setGoal(goalRes.data || null) // Si es null, reinicia la meta en la UI
 
     setLoading(false)
   }
@@ -87,7 +87,12 @@ export default function Stats({ userId, refreshKey }) {
         </div>
       </div>
 
-      <GoalSetting userId={userId} currentGoal={goal} onGoalChanged={() => setGoalRefreshKey((k) => k + 1)} />
+      <GoalSetting 
+        userId={userId} 
+        currentGoal={goal} 
+        onGoalChanged={() => setGoalRefreshKey((k) => k + 1)} 
+        todayMinutes={dailyData.get(getLocalDate()) || 0}
+      />
 
       <StreakDisplay streak={streak} goalMinutes={goalMinutes} />
 
