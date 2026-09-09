@@ -1,0 +1,237 @@
+:root {
+  --ink: #22262B;
+  --paper: #FAF8F3;
+  --paper-alt: #F1EDE3;
+  --forest: #2F6F4F;
+  --gold: #C9A227;
+  --line: #DAD4C4;
+  --error: #A5443A;
+}
+
+.app {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 0 20px 60px;
+}
+
+header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  padding: 32px 0 16px;
+  border-bottom: 2px solid var(--ink);
+}
+
+header h1 {
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 1.6rem;
+  font-weight: normal;
+  margin: 0;
+}
+
+.logout {
+  background: none;
+  border: none;
+  color: var(--ink);
+  text-decoration: underline;
+  font-size: 0.9rem;
+  padding: 0;
+}
+
+.tabs {
+  display: flex;
+  gap: 4px;
+  margin: 24px 0;
+}
+
+.tabs button {
+  flex: 1;
+  padding: 10px;
+  background: var(--paper-alt);
+  border: 1px solid var(--line);
+  color: var(--ink);
+  font-size: 0.95rem;
+}
+
+.tabs button.active {
+  background: var(--forest);
+  color: var(--paper);
+  border-color: var(--forest);
+}
+
+.card {
+  border: 1px solid var(--line);
+  padding: 20px;
+}
+
+.mode-switch {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.mode-switch button {
+  background: none;
+  border: 1px solid var(--line);
+  padding: 6px 14px;
+  font-size: 0.85rem;
+}
+
+.mode-switch button.active {
+  border-color: var(--forest);
+  color: var(--forest);
+  font-weight: 600;
+}
+
+.field {
+  display: block;
+  font-size: 0.85rem;
+  margin-bottom: 14px;
+}
+
+.field select,
+.field input {
+  display: block;
+  width: 100%;
+  margin-top: 4px;
+  padding: 8px;
+  border: 1px solid var(--line);
+  background: var(--paper);
+}
+
+.add-ramo {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.add-ramo input {
+  flex: 1;
+  padding: 8px;
+  border: 1px solid var(--line);
+  background: var(--paper);
+}
+
+.add-ramo button,
+.timer-actions button,
+.manual-block button,
+form button {
+  background: var(--forest);
+  color: var(--paper);
+  border: none;
+  padding: 8px 16px;
+  font-size: 0.9rem;
+}
+
+.timer-display {
+  font-family: Georgia, serif;
+  font-size: 2.6rem;
+  text-align: center;
+  padding: 20px 0;
+  letter-spacing: 1px;
+}
+
+.timer-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+}
+
+.manual-block {
+  display: flex;
+  gap: 10px;
+  align-items: end;
+}
+
+.manual-block .field {
+  flex: 1;
+  margin-bottom: 0;
+}
+
+.message {
+  margin-top: 14px;
+  font-size: 0.85rem;
+  color: var(--forest);
+}
+
+.error {
+  color: var(--error);
+}
+
+.auth-card {
+  max-width: 380px;
+  margin: 15vh auto 0;
+  padding: 28px;
+  border: 1px solid var(--line);
+}
+
+.auth-card h1 {
+  font-family: Georgia, serif;
+  font-weight: normal;
+  font-size: 1.5rem;
+}
+
+.auth-card form {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.auth-card input {
+  flex: 1;
+  padding: 8px;
+  border: 1px solid var(--line);
+}
+
+.day-block {
+  margin-bottom: 24px;
+}
+
+.day-header {
+  display: flex;
+  justify-content: space-between;
+  font-family: Georgia, serif;
+  font-size: 1.05rem;
+  border-bottom: 1px solid var(--ink);
+  padding-bottom: 6px;
+  margin-bottom: 8px;
+}
+
+.day-block ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.day-block li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--line);
+  font-size: 0.9rem;
+}
+
+.dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.ramo-name {
+  flex: 1;
+}
+
+.duracion {
+  font-variant-numeric: tabular-nums;
+}
+
+.metodo {
+  color: #7A7368;
+  font-size: 0.8rem;
+}
+
+.empty {
+  color: #7A7368;
+}
