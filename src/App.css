@@ -173,12 +173,12 @@ form button {
 
 .auth-card form {
   display: flex;
-  gap: 8px;
+  flex-direction: column;
+  gap: 12px;
   margin-top: 16px;
 }
 
 .auth-card input {
-  flex: 1;
   padding: 8px;
   border: 1px solid var(--line);
 }

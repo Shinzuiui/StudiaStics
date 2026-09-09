@@ -12,9 +12,9 @@ Stack: React (Vite) + Supabase.
 2. Pega el contenido de `supabase/schema.sql` y dale **Run**.
    Esto crea las tablas `ramos` y `sesiones`, y las políticas de seguridad (cada usuario solo ve sus propios datos).
 
-## 3. Activar login por link mágico
+## 3. Configurar el login (correo + contraseña)
 1. Ve a **Authentication > Providers** y confirma que "Email" esté habilitado (viene por defecto).
-2. En **Authentication > URL Configuration**, agrega `http://localhost:5173` como Site URL/Redirect URL para que el link funcione en desarrollo local.
+2. Para que el registro entre directo sin pedir clic en un correo de verificación: ve a **Authentication > Sign In / Providers > Email** y desactiva "**Confirm email**". Si la dejas activada, después de "Registrarme" Supabase exige hacer clic en un link del correo antes de poder iniciar sesión.
 
 ## 4. Obtener las credenciales
 1. Ve a **Settings > API**.
@@ -31,17 +31,16 @@ Pega el Project URL y la anon key en `.env`.
 npm install
 npm run dev
 ```
-Abre http://localhost:5173, ingresa tu correo, y entra con el link que te llega.
+Abre http://localhost:5173. La primera vez, dale a "Registrarme" con tu correo y una contraseña; las siguientes veces, "Iniciar sesión". Como la sesión queda guardada en el navegador, no te va a pedir login de nuevo salvo que cierres sesión o borres los datos del sitio.
 
 ## 7. Deploy (opcional, cuando quieras)
 1. Sube este proyecto a un repo de GitHub.
 2. Conéctalo en https://vercel.com (importa el repo).
 3. En las variables de entorno de Vercel, agrega `VITE_SUPABASE_URL` y `VITE_SUPABASE_ANON_KEY`.
-4. Agrega la URL que te da Vercel también en **Authentication > URL Configuration** de Supabase.
 
 ## Estructura
 - `src/supabaseClient.js` — conexión a Supabase
-- `src/components/Auth.jsx` — login sin contraseña (magic link)
+- `src/components/Auth.jsx` — login/registro con correo y contraseña, sesión persistente
 - `src/components/SessionForm.jsx` — registrar sesión (cronómetro o manual), y agregar ramos
 - `src/components/History.jsx` — historial agrupado por día
 - `supabase/schema.sql` — script para crear las tablas y RLS
