@@ -61,5 +61,4 @@ create policy "Users can manage their own metas"
   using (auth.uid() = user_id)
   with check (auth.uid() = user_id);
 
-grant usage on schema public to authenticated;
 grant select, insert, update, delete on table public.metas to authenticated;

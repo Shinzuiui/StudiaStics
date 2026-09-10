@@ -8,8 +8,16 @@ export default function ThemeToggle() {
   })
 
   useEffect(() => {
-    document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light')
-    localStorage.setItem('studiastics-theme', dark ? 'dark' : 'light')
+    const isDark = dark
+    document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light')
+    // Force color-scheme to override mobile OS dark mode forcing
+    document.documentElement.style.colorScheme = isDark ? 'dark' : 'light'
+    // Update the meta theme-color for the mobile status bar
+    const metaTheme = document.querySelector('meta[name="theme-color"]')
+    if (metaTheme) {
+      metaTheme.setAttribute('content', isDark ? '#0f172a' : '#ffffff')
+    }
+    localStorage.setItem('studiastics-theme', isDark ? 'dark' : 'light')
   }, [dark])
 
   return (

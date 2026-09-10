@@ -41,12 +41,12 @@ function useThemeColors() {
   return colors
 }
 
-export default function Charts({ sesiones }) {
+export default function Charts({ sessions }) {
   const theme = useThemeColors()
 
   const dataPorDia = useMemo(() => {
-    if (!sesiones || sesiones.length === 0) return []
-    const byDate = sesiones.reduce((acc, s) => {
+    if (!sessions || sessions.length === 0) return []
+    const byDate = sessions.reduce((acc, s) => {
       acc[s.fecha] = (acc[s.fecha] || 0) + s.duracion_minutos
       return acc
     }, {})
@@ -66,7 +66,7 @@ export default function Charts({ sesiones }) {
         minutos: byDate[date]
       }
     })
-  }, [sesiones])
+  }, [sessions])
 
   const CustomTooltip = ({ active, payload, label }) => {
     if (active && payload && payload.length) {
