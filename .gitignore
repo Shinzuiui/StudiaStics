@@ -3,3 +3,4 @@ dist
 .env
 .DS_Store
 study-tracker.zip
+*.timestamp-*.mjs

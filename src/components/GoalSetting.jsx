@@ -61,20 +61,15 @@ export default function GoalSetting({ userId, currentGoal, onGoalChanged, todayM
         </div>
         
         {currentGoal && (
-          <div className="goal-progress-container" style={{ marginTop: '20px' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', marginBottom: '8px', color: 'var(--text-muted)', fontWeight: 500 }}>
+          <div className="goal-progress-container">
+            <div className="goal-progress-labels">
               <span>{todayMinutes} min estudiados hoy</span>
               <span>{Math.round(progressPercent)}%</span>
             </div>
-            <div className="goal-progress-bar" style={{ height: '10px', background: 'var(--bg)', borderRadius: '5px', overflow: 'hidden', border: '1px solid var(--border)' }}>
+            <div className="goal-progress-bar">
               <div 
-                style={{ 
-                  height: '100%', 
-                  width: `${Math.min(progressPercent, 100)}%`, 
-                  background: progressPercent >= 100 ? 'var(--gold)' : 'linear-gradient(90deg, var(--accent-blue), var(--accent-mauve))',
-                  transition: 'width 0.8s cubic-bezier(0.4, 0, 0.2, 1), background 0.5s ease',
-                  borderRadius: '5px'
-                }} 
+                className={`goal-progress-fill${progressPercent >= 100 ? ' goal-complete' : ''}`}
+                style={{ width: `${Math.min(progressPercent, 100)}%` }} 
               />
             </div>
           </div>

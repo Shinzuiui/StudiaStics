@@ -841,6 +841,33 @@ button:disabled {
 .goal-cancel-btn:hover {
   color: var(--text) !important;
 }
+.goal-progress-container {
+  margin-top: 20px;
+}
+.goal-progress-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.85rem;
+  margin-bottom: 8px;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+.goal-progress-bar {
+  height: 10px;
+  background: var(--bg);
+  border-radius: 5px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+.goal-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent-blue), var(--accent-mauve));
+  transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1), background 0.5s ease;
+  border-radius: 5px;
+}
+.goal-progress-fill.goal-complete {
+  background: var(--gold);
+}
 
 /* ============================= */
 /*  Streak Banner                 */
