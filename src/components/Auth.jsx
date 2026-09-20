@@ -2,28 +2,27 @@ import { useState } from 'react'
 import { supabase } from '../supabaseClient'
 import ThemeToggle from './ThemeToggle'
 import DesignToggle from './DesignToggle'
+import { useToast } from './Toast'
 
 export default function Auth() {
   const [loading, setLoading] = useState(false)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [isSignUp, setIsSignUp] = useState(false)
-  const [message, setMessage] = useState('')
-  const [errorMsg, setErrorMsg] = useState('')
+  const toast = useToast()
 
   const handleAuth = async (e) => {
     e.preventDefault()
     setLoading(true)
-    setMessage('')
-    setErrorMsg('')
+
 
     if (isSignUp) {
       const { error } = await supabase.auth.signUp({ email, password })
-      if (error) setErrorMsg(error.message)
-      else setMessage('¡Cuenta creada! Ya puedes iniciar sesión.')
+      if (error) toast.error(error.message)
+      else toast.success('¡Cuenta creada! Ya puedes iniciar sesión.')
     } else {
       const { error } = await supabase.auth.signInWithPassword({ email, password })
-      if (error) setErrorMsg(error.message)
+      if (error) toast.error(error.message)
     }
     setLoading(false)
   }
@@ -58,8 +57,7 @@ export default function Auth() {
           </button>
         </form>
 
-        {errorMsg && <p className="error" style={{marginTop: '16px'}}>{errorMsg}</p>}
-        {message && <p className="message" style={{marginTop: '16px'}}>{message}</p>}
+
 
         <p style={{ marginTop: '24px', fontSize: '0.9rem', textAlign: 'center', color: 'var(--text-muted)' }}>
           {isSignUp ? '¿Ya tienes cuenta?' : '¿No tienes cuenta?'}{' '}
@@ -74,8 +72,6 @@ export default function Auth() {
             }}
             onClick={() => {
               setIsSignUp(!isSignUp)
-              setMessage('')
-              setErrorMsg('')
             }}
           >
             {isSignUp ? 'Inicia sesión aquí' : 'Regístrate aquí'}

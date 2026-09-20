@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../supabaseClient'
 import { getLocalDate } from '../utils'
+import { useToast } from './Toast'
 
 const COLORS = ['#7EB6FF', '#C4A1E0', '#34C759', '#FF9F43', '#E5484D', '#3A6EA5', '#8B5CF6', '#EC4899']
 
@@ -15,7 +16,7 @@ export default function SessionForm({
   const [mode, setMode] = useState('timer') // 'timer' | 'pomodoro' | 'manual'
   const [manualMinutes, setManualMinutes] = useState('')
   const [saving, setSaving] = useState(false)
-  const [message, setMessage] = useState(null)
+  const toast = useToast()
 
   // Pomodoro Helpers
   const pomoMaxSeconds = pomoPhase === 'study' ? pomoConfig.study * 60 : pomoConfig.break * 60
@@ -27,9 +28,9 @@ export default function SessionForm({
   useEffect(() => {
     if (pomoSecondsLeft === 0 && !pomoRunning) {
       if (pomoPhase === 'study') {
-        setMessage('¡Pomodoro completado! Guarda tu sesión para iniciar el descanso.')
+        toast.success('¡Pomodoro completado! Guarda tu sesión para iniciar el descanso.')
       } else {
-        setMessage('¡Descanso terminado! Volvamos al estudio.')
+        toast.info('¡Descanso terminado! Volvamos al estudio.')
       }
     }
   }, [pomoSecondsLeft, pomoRunning, pomoPhase])
@@ -41,7 +42,7 @@ export default function SessionForm({
   async function loadRamos() {
     const { data, error } = await supabase.from('ramos').select('*').order('nombre')
     if (error) {
-      setMessage('No se pudieron cargar tus ramos: ' + error.message)
+      toast.error('No se pudieron cargar tus ramos: ' + error.message)
     } else if (data) {
       setRamos(data)
       if (data.length && !ramoId) setRamoId(data[0].id)
@@ -51,7 +52,7 @@ export default function SessionForm({
   async function addRamo(e) {
     e.preventDefault()
     if (!newRamo.trim()) return
-    setMessage(null)
+
     const color = COLORS[ramos.length % COLORS.length]
     const { data, error } = await supabase
       .from('ramos')
@@ -59,7 +60,7 @@ export default function SessionForm({
       .select()
       .single()
     if (error) {
-      setMessage('No se pudo agregar el ramo: ' + error.message)
+      toast.error('No se pudo agregar el ramo: ' + error.message)
     } else if (data) {
       setRamos((prev) => [...prev, data])
       setRamoId(data.id)
@@ -84,13 +85,12 @@ export default function SessionForm({
         : `¿Eliminar "${ramo.nombre}"? No se puede deshacer.`
 
     if (!window.confirm(msg)) return
-    setMessage(null)
 
     // Delete associated sessions first (foreign key constraint)
     if (count > 0) {
       const { error: sessErr } = await supabase.from('sesiones').delete().eq('ramo_id', ramoId)
       if (sessErr) {
-        setMessage('Error al eliminar sesiones: ' + sessErr.message)
+        toast.error('Error al eliminar sesiones: ' + sessErr.message)
         return
       }
     }
@@ -98,12 +98,12 @@ export default function SessionForm({
     // Then delete the ramo
     const { error: ramoErr } = await supabase.from('ramos').delete().eq('id', ramoId)
     if (ramoErr) {
-      setMessage('Error al eliminar ramo: ' + ramoErr.message)
+      toast.error('Error al eliminar ramo: ' + ramoErr.message)
     } else {
       const updated = ramos.filter((r) => r.id !== ramoId)
       setRamos(updated)
       setRamoId(updated.length ? updated[0].id : '')
-      setMessage(`"${ramo.nombre}" eliminado.`)
+      toast.success(`"${ramo.nombre}" eliminado.`)
       onSaved?.()
     }
   }
@@ -117,15 +117,15 @@ export default function SessionForm({
 
   async function saveSession(durationMinutes, metodo) {
     if (!ramoId) {
-      setMessage('Primero agrega o elige un ramo.')
+      toast.warn('Primero agrega o elige un ramo.')
       return
     }
     if (!durationMinutes || durationMinutes <= 0) {
-      setMessage('La duración debe ser mayor a 0.')
+      toast.warn('La duración debe ser mayor a 0.')
       return
     }
     setSaving(true)
-    setMessage(null)
+
     const durationRounded = Math.max(1, Math.round(durationMinutes))
     // Validar método para la base de datos (solo admite 'timer' o 'manual')
     const dbMetodo = metodo === 'pomodoro' ? 'timer' : metodo;
@@ -139,9 +139,9 @@ export default function SessionForm({
     })
     setSaving(false)
     if (error) {
-      setMessage('Error al guardar: ' + error.message)
+      toast.error('Error al guardar: ' + error.message)
     } else {
-      setMessage('Sesión guardada.')
+      toast.success('Sesión guardada.')
       setManualMinutes('')
       onSaved?.()
 
@@ -159,14 +159,13 @@ export default function SessionForm({
   function handleSkipBreak() {
     setPomoPhase('study')
     setPomoSecondsLeft(pomoConfig.study * 60)
-    setMessage(null)
   }
 
   function handleResetPomo() {
     setPomoRunning(false)
     setPomoPhase('study')
     setPomoSecondsLeft(pomoConfig.study * 60)
-    setMessage(null)
+
   }
 
   function handleSavePomodoro() {
@@ -335,7 +334,7 @@ export default function SessionForm({
         </div>
       )}
 
-      {message && <p className="message">{message}</p>}
+
     </div>
   )
 }

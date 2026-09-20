@@ -1,17 +1,17 @@
 import { useState } from 'react'
 import { supabase } from '../supabaseClient'
 import { getLocalDate } from '../utils'
+import { useToast } from './Toast'
 
 export default function GoalSetting({ userId, currentGoal, onGoalChanged, todayMinutes = 0 }) {
   const [editing, setEditing] = useState(false)
   const [minutes, setMinutes] = useState(currentGoal?.meta_minutos || 60)
   const [saving, setSaving] = useState(false)
-  const [error, setError] = useState(null)
+  const toast = useToast()
 
   async function handleSave() {
     if (!minutes || minutes <= 0) return
     setSaving(true)
-    setError(null)
     const { error: err } = await supabase.from('metas').insert({
       user_id: userId,
       meta_minutos: Number(minutes),
@@ -19,7 +19,7 @@ export default function GoalSetting({ userId, currentGoal, onGoalChanged, todayM
     })
     setSaving(false)
     if (err) {
-      setError('No se pudo guardar la meta: ' + err.message)
+      toast.error('No se pudo guardar la meta: ' + err.message)
     } else {
       setEditing(false)
       onGoalChanged?.()
@@ -29,12 +29,11 @@ export default function GoalSetting({ userId, currentGoal, onGoalChanged, todayM
   async function handleDelete() {
     if (!window.confirm('¿Seguro que quieres borrar tu meta diaria actual?')) return
     setSaving(true)
-    setError(null)
     // Borramos todas las metas del usuario para reiniciar por completo
     const { error: err } = await supabase.from('metas').delete().eq('user_id', userId)
     setSaving(false)
     if (err) {
-      setError('No se pudo eliminar la meta: ' + err.message)
+      toast.error('No se pudo eliminar la meta: ' + err.message)
     } else {
       setEditing(false)
       onGoalChanged?.()
@@ -105,7 +104,7 @@ export default function GoalSetting({ userId, currentGoal, onGoalChanged, todayM
           </button>
         </div>
       </div>
-      {error && <p className="error">{error}</p>}
+
     </div>
   )
 }
