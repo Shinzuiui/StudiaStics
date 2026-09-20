@@ -51,6 +51,28 @@ export default function Stats({ userId, refreshKey }) {
 
   // ---------- Derived data ----------
 
+  // Rest days configuration (0 = Domingo, 1 = Lunes, ..., 6 = Sábado). Default: [0, 6] (Fin de semana)
+  const [restDays, setRestDays] = useState(() => {
+    if (!userId) return [0, 6]
+    const saved = localStorage.getItem(`studiastics-rest-days-${userId}`)
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved)
+        if (Array.isArray(parsed)) return parsed
+      } catch (e) {
+        console.error('Error parsing rest days', e)
+      }
+    }
+    return [0, 6]
+  })
+
+  function handleUpdateRestDays(newRestDays) {
+    setRestDays(newRestDays)
+    if (userId) {
+      localStorage.setItem(`studiastics-rest-days-${userId}`, JSON.stringify(newRestDays))
+    }
+  }
+
   // Daily totals: Map<'YYYY-MM-DD', totalMinutes>
   const dailyData = new Map()
   sessions.forEach((s) => {
@@ -59,7 +81,7 @@ export default function Stats({ userId, refreshKey }) {
   })
 
   const goalMinutes = goal?.meta_minutos || null
-  const streak = calculateStreak(dailyData, goalMinutes)
+  const { streak, isRestDayToday, studiedToday } = calculateStreak(dailyData, goalMinutes, restDays)
 
   const totalMinutes = sessions.reduce((sum, s) => sum + s.duracion_minutos, 0)
   const totalDays = dailyData.size
@@ -94,7 +116,14 @@ export default function Stats({ userId, refreshKey }) {
         todayMinutes={dailyData.get(getLocalDate()) || 0}
       />
 
-      <StreakDisplay streak={streak} goalMinutes={goalMinutes} />
+      <StreakDisplay 
+        streak={streak} 
+        goalMinutes={goalMinutes} 
+        restDays={restDays}
+        onUpdateRestDays={handleUpdateRestDays}
+        isRestDayToday={isRestDayToday}
+        studiedToday={studiedToday}
+      />
 
       <Heatmap dailyData={dailyData} goalMinutes={goalMinutes} />
 
@@ -106,33 +135,49 @@ export default function Stats({ userId, refreshKey }) {
 // ---------- Helpers ----------
 
 /**
- * Count consecutive days (from today backwards) where the user met the daily goal.
- * If today's total hasn't reached the goal yet, counting starts from yesterday
- * so the streak doesn't "break" during the day.
+ * Count consecutive days where the user met the daily goal.
+ * - Days configured as rest days are excused (do not break the streak if not studied).
+ * - If the user studies and meets the goal on a rest day, it counts towards the streak.
+ * - If today hasn't reached the goal yet, today is not penalized.
  */
-function calculateStreak(dailyData, goalMinutes) {
-  if (!goalMinutes) return 0
+function calculateStreak(dailyData, goalMinutes, restDays = [0, 6]) {
+  if (!goalMinutes) return { streak: 0, isRestDayToday: false, studiedToday: false }
 
-  let streak = 0
+  const restDaysSet = new Set(restDays)
   const d = new Date()
-
-  // If today already meets the goal, include it; otherwise start from yesterday
   const todayStr = getLocalDate(d)
   const todayMinutes = dailyData.get(todayStr) || 0
-  if (todayMinutes < goalMinutes) {
-    d.setDate(d.getDate() - 1)
+  const todayDayOfWeek = d.getDay()
+  const isRestDayToday = restDaysSet.has(todayDayOfWeek)
+  const studiedToday = todayMinutes >= goalMinutes
+
+  let streak = 0
+
+  // If user reached the goal today, it immediately counts for the streak
+  if (studiedToday) {
+    streak++
   }
+
+  // Walk backwards starting from yesterday
+  d.setDate(d.getDate() - 1)
 
   for (let safety = 0; safety < 400; safety++) {
     const dateStr = getLocalDate(d)
+    const dayOfWeek = d.getDay()
     const minutes = dailyData.get(dateStr) || 0
+    const isRest = restDaysSet.has(dayOfWeek)
+
     if (minutes >= goalMinutes) {
       streak++
       d.setDate(d.getDate() - 1)
+    } else if (isRest) {
+      // It was a rest day and they didn't study: excused! Does not break streak.
+      d.setDate(d.getDate() - 1)
     } else {
+      // Required study day and goal was not met: streak breaks here
       break
     }
   }
 
-  return streak
+  return { streak, isRestDayToday, studiedToday }
 }
