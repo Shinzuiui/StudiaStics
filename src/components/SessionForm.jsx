@@ -9,15 +9,23 @@ const COLORS = ['#7EB6FF', '#C4A1E0', '#34C759', '#FF9F43', '#E5484D', '#3A6EA5'
 export default function SessionForm({ 
   userId, onSaved, 
   timerSeconds, setTimerSeconds, timerRunning, setTimerRunning,
+  currentRamoId, setCurrentRamoId, currentRamoName, setCurrentRamoName,
   pomoPhase, setPomoPhase, pomoRunning, setPomoRunning, pomoConfig, setPomoConfig, pomoSecondsLeft, setPomoSecondsLeft 
 }) {
   const [ramos, setRamos] = useState([])
-  const [ramoId, setRamoId] = useState('')
+  const [ramoId, setRamoId] = useState(currentRamoId || '')
   const [newRamo, setNewRamo] = useState('')
   const [mode, setMode] = useState('timer') // 'timer' | 'pomodoro' | 'manual'
   const [manualMinutes, setManualMinutes] = useState('')
   const [saving, setSaving] = useState(false)
   const toast = useToast()
+
+  // Sincronizar ramoId si cambia desde afuera (ej: al recuperar sesión previa)
+  useEffect(() => {
+    if (currentRamoId && currentRamoId !== ramoId) {
+      setRamoId(currentRamoId)
+    }
+  }, [currentRamoId])
 
   // Pomodoro Helpers
   const pomoMaxSeconds = pomoPhase === 'study' ? pomoConfig.study * 60 : pomoConfig.break * 60
@@ -46,7 +54,13 @@ export default function SessionForm({
       toast.error('No se pudieron cargar tus ramos: ' + error.message)
     } else if (data) {
       setRamos(data)
-      if (data.length && !ramoId) setRamoId(data[0].id)
+      if (data.length) {
+        const found = currentRamoId ? data.find(r => r.id === currentRamoId) : null
+        const active = found || data[0]
+        setRamoId(active.id)
+        setCurrentRamoId?.(active.id)
+        setCurrentRamoName?.(active.nombre)
+      }
     }
   }
 
@@ -65,6 +79,8 @@ export default function SessionForm({
     } else if (data) {
       setRamos((prev) => [...prev, data])
       setRamoId(data.id)
+      setCurrentRamoId?.(data.id)
+      setCurrentRamoName?.(data.nombre)
       setNewRamo('')
     }
   }
@@ -149,6 +165,9 @@ export default function SessionForm({
       if (metodo === 'timer') {
         setTimerSeconds(0)
         setTimerRunning(false)
+        if (userId) {
+          localStorage.removeItem(`studiastics_active_timer_${userId}`)
+        }
       } else if (metodo === 'pomodoro') {
         // Al guardar el estudio del pomodoro, pasar a descanso automáticamente
         setPomoPhase('break')
@@ -196,7 +215,16 @@ export default function SessionForm({
       <div className="ramo-selector">
         <label className="field">
           Ramo
-          <select value={ramoId} onChange={(e) => setRamoId(e.target.value)}>
+          <select
+            value={ramoId}
+            onChange={(e) => {
+              const newId = e.target.value
+              setRamoId(newId)
+              setCurrentRamoId?.(newId)
+              const selected = ramos.find((r) => r.id === newId)
+              if (selected) setCurrentRamoName?.(selected.nombre)
+            }}
+          >
             {ramos.length === 0 && <option value="">Sin ramos todavía</option>}
             {ramos.map((r) => (
               <option key={r.id} value={r.id}>

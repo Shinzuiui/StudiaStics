@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from './supabaseClient'
+import { getLocalDate } from './utils'
 import Auth from './components/Auth'
 import SessionForm from './components/SessionForm'
 import History from './components/History'
@@ -19,6 +20,9 @@ function App() {
   // Timer global state
   const [timerSeconds, setTimerSeconds] = useState(0)
   const [timerRunning, setTimerRunning] = useState(false)
+  const [currentRamoId, setCurrentRamoId] = useState('')
+  const [currentRamoName, setCurrentRamoName] = useState('')
+  const [recoveredSession, setRecoveredSession] = useState(null)
 
   // Pomodoro global state
   const [pomoPhase, setPomoPhase] = useState('study') // 'study' | 'break'
@@ -108,6 +112,65 @@ function App() {
     }
   }, [pomoRunning, pomoSecondsLeft, pomoPhase, timerRunning, timerSeconds])
 
+  // Detección de sesión interrumpida al cargar la aplicación (por pantallazo azul, corte de luz o cierre)
+  useEffect(() => {
+    if (!session?.user?.id) return
+    const key = `studiastics_active_timer_${session.user.id}`
+    try {
+      const saved = localStorage.getItem(key)
+      if (saved) {
+        const parsed = JSON.parse(saved)
+        if (parsed && parsed.seconds >= 30 && parsed.interrupted) {
+          setRecoveredSession(parsed)
+        }
+      }
+    } catch (e) {
+      console.warn('Error al leer respaldo de sesión previa:', e)
+    }
+  }, [session])
+
+  // Auto-respaldo continuo en localStorage mientras el cronómetro corre
+  useEffect(() => {
+    if (!session?.user?.id) return
+    const key = `studiastics_active_timer_${session.user.id}`
+
+    if (timerSeconds > 0) {
+      localStorage.setItem(key, JSON.stringify({
+        seconds: timerSeconds,
+        ramoId: currentRamoId,
+        ramoNombre: currentRamoName,
+        timestamp: Date.now(),
+        interrupted: true
+      }))
+    } else if (timerSeconds === 0 && !timerRunning && !recoveredSession) {
+      localStorage.removeItem(key)
+    }
+  }, [timerSeconds, timerRunning, currentRamoId, currentRamoName, session, recoveredSession])
+
+  // Advertencia antes de cerrar pestaña y sincronización inmediata a localStorage
+  useEffect(() => {
+    const handleBeforeUnload = (e) => {
+      if (timerRunning) {
+        if (session?.user?.id && timerSeconds > 0) {
+          const key = `studiastics_active_timer_${session.user.id}`
+          localStorage.setItem(key, JSON.stringify({
+            seconds: timerSeconds,
+            ramoId: currentRamoId,
+            ramoNombre: currentRamoName,
+            timestamp: Date.now(),
+            interrupted: true
+          }))
+        }
+        e.preventDefault()
+        e.returnValue = ''
+        return ''
+      }
+    }
+
+    window.addEventListener('beforeunload', handleBeforeUnload)
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload)
+  }, [timerRunning, timerSeconds, currentRamoId, currentRamoName, session])
+
   if (!session) {
     return <Auth />
   }
@@ -116,6 +179,58 @@ function App() {
 
   const handleSaved = () => {
     setRefreshKey((prev) => prev + 1)
+  }
+
+  // Guardar la sesión recuperada directamente en Supabase
+  const handleSaveRecoveredSession = async () => {
+    if (!recoveredSession || !userId) return
+    const durationMinutes = Math.max(1, Math.round(recoveredSession.seconds / 60))
+    let targetRamoId = recoveredSession.ramoId
+
+    if (!targetRamoId) {
+      const { data } = await supabase.from('ramos').select('id').eq('user_id', userId).limit(1)
+      if (data && data.length > 0) targetRamoId = data[0].id
+    }
+
+    const { error } = await supabase.from('sesiones').insert({
+      ramo_id: targetRamoId,
+      user_id: userId,
+      fecha: getLocalDate(),
+      duracion_minutos: durationMinutes,
+      metodo: 'timer',
+    })
+
+    if (error) {
+      toast.error('Error al guardar sesión recuperada: ' + error.message)
+    } else {
+      toast.success(`¡Sesión de ${durationMinutes} min recuperada y guardada con éxito!`)
+      localStorage.removeItem(`studiastics_active_timer_${userId}`)
+      setRecoveredSession(null)
+      setRefreshKey((prev) => prev + 1)
+    }
+  }
+
+  // Cargar el tiempo recuperado en el cronómetro para continuar estudiando
+  const handleResumeRecoveredSession = () => {
+    if (!recoveredSession) return
+    setTimerSeconds(recoveredSession.seconds)
+    if (recoveredSession.ramoId) {
+      setCurrentRamoId(recoveredSession.ramoId)
+      if (recoveredSession.ramoNombre) setCurrentRamoName(recoveredSession.ramoNombre)
+    }
+    setActiveTab('registrar')
+    const mins = Math.max(1, Math.round(recoveredSession.seconds / 60))
+    toast.info(`Tiempo de ${mins} min cargado en el cronómetro. ¡Puedes continuar estudiando!`)
+    setRecoveredSession(null)
+  }
+
+  // Descartar la sesión recuperada
+  const handleDismissRecoveredSession = () => {
+    if (userId) {
+      localStorage.removeItem(`studiastics_active_timer_${userId}`)
+    }
+    setRecoveredSession(null)
+    toast.info('Sesión anterior descartada.')
   }
 
   return (
@@ -160,6 +275,37 @@ function App() {
 
       <main className="app-main">
         <div className="main-content">
+          {recoveredSession && (
+            <div className="recovered-session-banner">
+              <div className="recovered-session-content">
+                <span className="recovered-icon">🛡️</span>
+                <div className="recovered-text">
+                  <strong>Sesión de estudio recuperada</strong>
+                  <span>
+                    Detectamos <strong>{Math.max(1, Math.round(recoveredSession.seconds / 60))} min</strong> pendientes de{' '}
+                    <strong>{recoveredSession.ramoNombre || 'estudio'}</strong> que no se alcanzaron a guardar por cierre o reinicio.
+                  </span>
+                </div>
+              </div>
+              <div className="recovered-actions">
+                <button className="btn-recover-save" onClick={handleSaveRecoveredSession}>
+                  💾 Guardar
+                </button>
+                <button className="btn-recover-resume" onClick={handleResumeRecoveredSession}>
+                  ⏱️ Continuar
+                </button>
+                <button
+                  className="btn-recover-dismiss"
+                  onClick={handleDismissRecoveredSession}
+                  title="Descartar sesión"
+                  aria-label="Descartar sesión"
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+          )}
+
           {activeTab === 'registrar' && (
             <SessionForm
               userId={userId}
@@ -168,6 +314,10 @@ function App() {
               setTimerSeconds={setTimerSeconds}
               timerRunning={timerRunning}
               setTimerRunning={setTimerRunning}
+              currentRamoId={currentRamoId}
+              setCurrentRamoId={setCurrentRamoId}
+              currentRamoName={currentRamoName}
+              setCurrentRamoName={setCurrentRamoName}
               pomoPhase={pomoPhase}
               setPomoPhase={setPomoPhase}
               pomoRunning={pomoRunning}
