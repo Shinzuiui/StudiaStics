@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { supabase } from './supabaseClient'
 import Auth from './components/Auth'
 import SessionForm from './components/SessionForm'
@@ -6,12 +6,15 @@ import History from './components/History'
 import Stats from './components/Stats'
 import ThemeToggle from './components/ThemeToggle'
 import DesignToggle from './components/DesignToggle'
+import { useToast } from './components/Toast'
+import { sendSystemNotification, playChime, playBreakEndChime } from './notifications'
 import './App.css'
 
 function App() {
   const [session, setSession] = useState(null)
   const [activeTab, setActiveTab] = useState('registrar') // 'registrar' | 'historial' | 'estadisticas'
   const [refreshKey, setRefreshKey] = useState(0)
+  const toast = useToast()
 
   // Timer global state
   const [timerSeconds, setTimerSeconds] = useState(0)
@@ -22,6 +25,7 @@ function App() {
   const [pomoRunning, setPomoRunning] = useState(false)
   const [pomoConfig, setPomoConfig] = useState({ study: 25, break: 5 })
   const [pomoSecondsLeft, setPomoSecondsLeft] = useState(25 * 60)
+  const pomoWasRunningRef = useRef(false)
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -34,6 +38,13 @@ function App() {
 
     return () => subscription.unsubscribe()
   }, [])
+
+  // Rastrear si el pomodoro estuvo corriendo para evitar disparos en falso al resetear
+  useEffect(() => {
+    if (pomoRunning) {
+      pomoWasRunningRef.current = true
+    }
+  }, [pomoRunning])
 
   useEffect(() => {
     let interval = null
@@ -54,6 +65,48 @@ function App() {
     }
     return () => clearInterval(interval)
   }, [timerRunning, pomoRunning])
+
+  // Disparo global de alarma sonora + notificación de sistema + toast cuando el pomodoro llega a 0
+  useEffect(() => {
+    if (pomoWasRunningRef.current && pomoSecondsLeft === 0 && !pomoRunning) {
+      pomoWasRunningRef.current = false
+      if (pomoPhase === 'study') {
+        playChime()
+        toast.success('¡Pomodoro completado! Guarda tu sesión para iniciar el descanso.')
+        sendSystemNotification(
+          '🧠 ¡Pomodoro completado!',
+          `${pomoConfig.study} minutos de estudio terminados. ¡Guarda tu sesión!`
+        )
+      } else {
+        playBreakEndChime()
+        toast.info('¡Descanso terminado! Volvamos al estudio.')
+        sendSystemNotification(
+          '☕ ¡Descanso terminado!',
+          'Es hora de volver al estudio.'
+        )
+      }
+    }
+  }, [pomoSecondsLeft, pomoRunning, pomoPhase, pomoConfig, toast])
+
+  // Actualizar el título de la pestaña para ver el tiempo desde fuera (otra pestaña o ventana)
+  useEffect(() => {
+    if (pomoRunning) {
+      const mins = Math.floor(pomoSecondsLeft / 60)
+      const secs = pomoSecondsLeft % 60
+      const timeStr = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`
+      const icon = pomoPhase === 'study' ? '🧠' : '☕'
+      document.title = `(${timeStr}) ${icon} StudiaStics`
+    } else if (timerRunning) {
+      const mins = Math.floor(timerSeconds / 60)
+      const secs = timerSeconds % 60
+      const timeStr = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`
+      document.title = `(${timeStr}) ⏱️ StudiaStics`
+    } else if (pomoSecondsLeft === 0 && pomoWasRunningRef.current) {
+      document.title = '🔔 ¡Tiempo terminado! - StudiaStics'
+    } else {
+      document.title = 'StudiaStics'
+    }
+  }, [pomoRunning, pomoSecondsLeft, pomoPhase, timerRunning, timerSeconds])
 
   if (!session) {
     return <Auth />

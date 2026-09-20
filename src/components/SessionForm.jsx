@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { supabase } from '../supabaseClient'
 import { getLocalDate } from '../utils'
 import { useToast } from './Toast'
+import { unlockAudio, requestNotificationPermission } from '../notifications'
 
 const COLORS = ['#7EB6FF', '#C4A1E0', '#34C759', '#FF9F43', '#E5484D', '#3A6EA5', '#8B5CF6', '#EC4899']
 
@@ -24,16 +25,16 @@ export default function SessionForm({
   const strokeDasharray = 283 // 2 * pi * r (approx for r=45)
   const strokeDashoffset = strokeDasharray - (strokeDasharray * pomoProgress) / 100
 
-  // Efecto cuando el pomodoro llega a 0
-  useEffect(() => {
-    if (pomoSecondsLeft === 0 && !pomoRunning) {
-      if (pomoPhase === 'study') {
-        toast.success('¡Pomodoro completado! Guarda tu sesión para iniciar el descanso.')
-      } else {
-        toast.info('¡Descanso terminado! Volvamos al estudio.')
-      }
-    }
-  }, [pomoSecondsLeft, pomoRunning, pomoPhase])
+  const handleStartTimer = () => {
+    unlockAudio()
+    setTimerRunning(true)
+  }
+
+  const handleStartPomo = () => {
+    unlockAudio()
+    requestNotificationPermission()
+    setPomoRunning(true)
+  }
 
   useEffect(() => {
     loadRamos()
@@ -231,7 +232,7 @@ export default function SessionForm({
           <div className="timer-display">{formatTime(timerSeconds)}</div>
           <div className="timer-actions">
             {!timerRunning ? (
-              <button onClick={() => setTimerRunning(true)}>Iniciar</button>
+              <button onClick={handleStartTimer}>Iniciar</button>
             ) : (
               <button onClick={() => setTimerRunning(false)}>Pausar</button>
             )}
@@ -287,7 +288,7 @@ export default function SessionForm({
           <div className="timer-actions">
             {pomoSecondsLeft > 0 ? (
               !pomoRunning ? (
-                <button onClick={() => setPomoRunning(true)}>Iniciar</button>
+                <button onClick={handleStartPomo}>Iniciar</button>
               ) : (
                 <button onClick={() => setPomoRunning(false)}>Pausar</button>
               )
