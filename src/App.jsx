@@ -112,7 +112,7 @@ function App() {
     }
   }, [pomoRunning, pomoSecondsLeft, pomoPhase, timerRunning, timerSeconds])
 
-  // Detección de sesión interrumpida al cargar la aplicación (por pantallazo azul, corte de luz o cierre)
+  // Detección de sesión interrumpida al cargar la aplicación (por pantallazo azul, corte de luz o cierre real)
   useEffect(() => {
     if (!session?.user?.id) return
     const key = `studiastics_active_timer_${session.user.id}`
@@ -120,8 +120,16 @@ function App() {
       const saved = localStorage.getItem(key)
       if (saved) {
         const parsed = JSON.parse(saved)
-        if (parsed && parsed.seconds >= 30 && parsed.interrupted) {
+        // Solo mostrar recuperación si:
+        // 1. Tiene al menos 30 segundos de estudio
+        // 2. El respaldo tiene más de 10 segundos de antigüedad (= la app fue cerrada/crasheó de verdad)
+        //    Si tiene menos de 10s, fue probablemente un refresh normal y no un cierre inesperado
+        const isStale = parsed && parsed.timestamp && (Date.now() - parsed.timestamp > 10000)
+        if (parsed && parsed.seconds >= 30 && isStale) {
           setRecoveredSession(parsed)
+        } else if (parsed && !isStale) {
+          // Respaldo reciente: la app se recargó normalmente, limpiar
+          localStorage.removeItem(key)
         }
       }
     } catch (e) {
@@ -140,30 +148,24 @@ function App() {
         ramoId: currentRamoId,
         ramoNombre: currentRamoName,
         timestamp: Date.now(),
-        interrupted: true
       }))
     } else if (timerSeconds === 0 && !timerRunning && !recoveredSession) {
       localStorage.removeItem(key)
     }
   }, [timerSeconds, timerRunning, currentRamoId, currentRamoName, session, recoveredSession])
 
-  // Advertencia antes de cerrar pestaña y sincronización inmediata a localStorage
+  // Sincronización final a localStorage justo antes de cerrar la pestaña (sin diálogo molesto)
   useEffect(() => {
-    const handleBeforeUnload = (e) => {
-      if (timerRunning) {
-        if (session?.user?.id && timerSeconds > 0) {
-          const key = `studiastics_active_timer_${session.user.id}`
-          localStorage.setItem(key, JSON.stringify({
-            seconds: timerSeconds,
-            ramoId: currentRamoId,
-            ramoNombre: currentRamoName,
-            timestamp: Date.now(),
-            interrupted: true
-          }))
-        }
-        e.preventDefault()
-        e.returnValue = ''
-        return ''
+    const handleBeforeUnload = () => {
+      if (timerRunning && session?.user?.id && timerSeconds > 0) {
+        const key = `studiastics_active_timer_${session.user.id}`
+        // Guardar con timestamp antiguo para que al reabrir se detecte como "stale" (cerrado de verdad)
+        localStorage.setItem(key, JSON.stringify({
+          seconds: timerSeconds,
+          ramoId: currentRamoId,
+          ramoNombre: currentRamoName,
+          timestamp: Date.now() - 30000, // Marcar como 30s antiguo para disparar recuperación
+        }))
       }
     }
 

@@ -16,6 +16,8 @@ export default function StreakDisplay({
   goalMinutes,
   restDays = [0, 6],
   onUpdateRestDays,
+  streakMinMinutes = 40,
+  onUpdateStreakMin,
   isRestDayToday = false,
   studiedToday = false,
 }) {
@@ -23,12 +25,14 @@ export default function StreakDisplay({
 
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [selectedRestDays, setSelectedRestDays] = useState(restDays)
+  const [editingMin, setEditingMin] = useState(streakMinMinutes)
   const toast = useToast()
 
   const level = getLevel(streak)
 
   function openModal() {
     setSelectedRestDays(restDays || [0, 6])
+    setEditingMin(streakMinMinutes)
     setIsModalOpen(true)
   }
 
@@ -48,6 +52,8 @@ export default function StreakDisplay({
 
   function handleSave() {
     onUpdateRestDays?.(selectedRestDays)
+    const minVal = Math.max(1, Math.round(editingMin))
+    onUpdateStreakMin?.(minVal)
     setIsModalOpen(false)
   }
 
@@ -79,6 +85,10 @@ export default function StreakDisplay({
               </div>
             )}
           </div>
+
+          <span className="streak-min-hint">
+            Mínimo: {streakMinMinutes} min/día
+          </span>
         </div>
 
         <button
@@ -155,6 +165,26 @@ export default function StreakDisplay({
               })}
             </div>
 
+            <div className="streak-min-config">
+              <label className="streak-min-label">
+                <span>⏱️ Mínimo diario para la racha</span>
+                <span className="streak-min-desc">
+                  Estudia al menos esta cantidad de minutos en un día de estudio para que cuente en tu racha. Es independiente de tu meta diaria.
+                </span>
+              </label>
+              <div className="streak-min-input-row">
+                <input
+                  type="number"
+                  min="1"
+                  max="480"
+                  value={editingMin}
+                  onChange={(e) => setEditingMin(parseInt(e.target.value, 10) || 1)}
+                  className="streak-min-input"
+                />
+                <span className="streak-min-unit">min</span>
+              </div>
+            </div>
+
             <div className="streak-modal-summary">
               <span>
                 <strong>{studyDaysCount}</strong> {studyDaysCount === 1 ? 'día' : 'días'} de estudio
@@ -162,6 +192,10 @@ export default function StreakDisplay({
               <span>•</span>
               <span>
                 <strong>{restDaysCount}</strong> {restDaysCount === 1 ? 'día' : 'días'} de descanso
+              </span>
+              <span>•</span>
+              <span>
+                Mín. <strong>{Math.max(1, Math.round(editingMin))} min</strong>/día
               </span>
             </div>
 
@@ -190,3 +224,4 @@ function getLevel(days) {
   if (days >= 3) return { name: 'Bronce', icon: '🥉', cls: 'streak-bronze' }
   return { name: '', icon: '🔥', cls: 'streak-none' }
 }
+
