@@ -112,7 +112,7 @@ function App() {
     }
   }, [pomoRunning, pomoSecondsLeft, pomoPhase, timerRunning, timerSeconds])
 
-  // Detección de sesión interrumpida al cargar la aplicación (por pantallazo azul, corte de luz o cierre real)
+  // Detección de sesión interrumpida al cargar la aplicación (por pantallazo azul, corte de luz o cierre)
   useEffect(() => {
     if (!session?.user?.id) return
     const key = `studiastics_active_timer_${session.user.id}`
@@ -120,16 +120,9 @@ function App() {
       const saved = localStorage.getItem(key)
       if (saved) {
         const parsed = JSON.parse(saved)
-        // Solo mostrar recuperación si:
-        // 1. Tiene al menos 30 segundos de estudio
-        // 2. El respaldo tiene más de 10 segundos de antigüedad (= la app fue cerrada/crasheó de verdad)
-        //    Si tiene menos de 10s, fue probablemente un refresh normal y no un cierre inesperado
-        const isStale = parsed && parsed.timestamp && (Date.now() - parsed.timestamp > 10000)
-        if (parsed && parsed.seconds >= 30 && isStale) {
+        // Detectar si hay al menos 5 segundos acumulados pendientes de guardar
+        if (parsed && typeof parsed.seconds === 'number' && parsed.seconds >= 5) {
           setRecoveredSession(parsed)
-        } else if (parsed && !isStale) {
-          // Respaldo reciente: la app se recargó normalmente, limpiar
-          localStorage.removeItem(key)
         }
       }
     } catch (e) {
@@ -137,41 +130,73 @@ function App() {
     }
   }, [session])
 
+  // Rastrear si el usuario empezó a correr el timer en la sesión actual para no borrar nada al cargar
+  const timerStartedRef = useRef(false)
+
   // Auto-respaldo continuo en localStorage mientras el cronómetro corre
   useEffect(() => {
     if (!session?.user?.id) return
     const key = `studiastics_active_timer_${session.user.id}`
 
     if (timerSeconds > 0) {
+      timerStartedRef.current = true
       localStorage.setItem(key, JSON.stringify({
         seconds: timerSeconds,
         ramoId: currentRamoId,
         ramoNombre: currentRamoName,
         timestamp: Date.now(),
       }))
-    } else if (timerSeconds === 0 && !timerRunning && !recoveredSession) {
+    } else if (timerStartedRef.current && timerSeconds === 0 && !timerRunning) {
+      // El temporizador estuvo activo en esta sesión y fue reiniciado/guardado
+      timerStartedRef.current = false
       localStorage.removeItem(key)
     }
-  }, [timerSeconds, timerRunning, currentRamoId, currentRamoName, session, recoveredSession])
+  }, [timerSeconds, timerRunning, currentRamoId, currentRamoName, session])
 
-  // Sincronización final a localStorage justo antes de cerrar la pestaña (sin diálogo molesto)
+  // Referencias para que beforeunload siempre tenga el valor actual sin recrear el listener cada segundo
+  const timerRunningRef = useRef(timerRunning)
+  const pomoRunningRef = useRef(pomoRunning)
+  const timerSecondsRef = useRef(timerSeconds)
+  const currentRamoIdRef = useRef(currentRamoId)
+  const currentRamoNameRef = useRef(currentRamoName)
+  const sessionRef = useRef(session)
+
+  useEffect(() => { timerRunningRef.current = timerRunning }, [timerRunning])
+  useEffect(() => { pomoRunningRef.current = pomoRunning }, [pomoRunning])
+  useEffect(() => { timerSecondsRef.current = timerSeconds }, [timerSeconds])
+  useEffect(() => { currentRamoIdRef.current = currentRamoId }, [currentRamoId])
+  useEffect(() => { currentRamoNameRef.current = currentRamoName }, [currentRamoName])
+  useEffect(() => { sessionRef.current = session }, [session])
+
+  // Advertencia antes de cerrar o recargar si el tiempo está corriendo, y sincronización a localStorage
   useEffect(() => {
-    const handleBeforeUnload = () => {
-      if (timerRunning && session?.user?.id && timerSeconds > 0) {
-        const key = `studiastics_active_timer_${session.user.id}`
-        // Guardar con timestamp antiguo para que al reabrir se detecte como "stale" (cerrado de verdad)
+    const handleBeforeUnload = (e) => {
+      const isRunning = timerRunningRef.current || pomoRunningRef.current
+      const seconds = timerSecondsRef.current
+      const currentSession = sessionRef.current
+
+      // Guardar el tiempo actual en localStorage antes de que la pestaña se cierre
+      if (currentSession?.user?.id && seconds > 0) {
+        const key = `studiastics_active_timer_${currentSession.user.id}`
         localStorage.setItem(key, JSON.stringify({
-          seconds: timerSeconds,
-          ramoId: currentRamoId,
-          ramoNombre: currentRamoName,
-          timestamp: Date.now() - 30000, // Marcar como 30s antiguo para disparar recuperación
+          seconds: seconds,
+          ramoId: currentRamoIdRef.current,
+          ramoNombre: currentRamoNameRef.current,
+          timestamp: Date.now(),
         }))
+      }
+
+      // Si el tiempo está en play (libre o pomodoro), mostrar la advertencia nativa del navegador
+      if (isRunning) {
+        e.preventDefault()
+        e.returnValue = ''
+        return ''
       }
     }
 
     window.addEventListener('beforeunload', handleBeforeUnload)
     return () => window.removeEventListener('beforeunload', handleBeforeUnload)
-  }, [timerRunning, timerSeconds, currentRamoId, currentRamoName, session])
+  }, [])
 
   if (!session) {
     return <Auth />
@@ -221,8 +246,10 @@ function App() {
       if (recoveredSession.ramoNombre) setCurrentRamoName(recoveredSession.ramoNombre)
     }
     setActiveTab('registrar')
-    const mins = Math.max(1, Math.round(recoveredSession.seconds / 60))
-    toast.info(`Tiempo de ${mins} min cargado en el cronómetro. ¡Puedes continuar estudiando!`)
+    const timeLabel = recoveredSession.seconds >= 60
+      ? `${Math.max(1, Math.round(recoveredSession.seconds / 60))} min`
+      : `${recoveredSession.seconds} seg`
+    toast.info(`Tiempo de ${timeLabel} cargado en el cronómetro. ¡Puedes continuar estudiando!`)
     setRecoveredSession(null)
   }
 
@@ -284,7 +311,7 @@ function App() {
                 <div className="recovered-text">
                   <strong>Sesión de estudio recuperada</strong>
                   <span>
-                    Detectamos <strong>{Math.max(1, Math.round(recoveredSession.seconds / 60))} min</strong> pendientes de{' '}
+                    Detectamos <strong>{recoveredSession.seconds >= 60 ? `${Math.max(1, Math.round(recoveredSession.seconds / 60))} min` : `${recoveredSession.seconds} seg`}</strong> pendientes de{' '}
                     <strong>{recoveredSession.ramoNombre || 'estudio'}</strong> que no se alcanzaron a guardar por cierre o reinicio.
                   </span>
                 </div>
