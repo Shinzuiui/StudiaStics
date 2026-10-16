@@ -3,7 +3,6 @@ import { supabase } from '../supabaseClient'
 import { getLocalDate, formatMinutes } from '../utils'
 import GoalSetting from './GoalSetting'
 import StreakDisplay from './StreakDisplay'
-import Heatmap from './Heatmap'
 import Charts from './Charts'
 
 export default function Stats({ userId, refreshKey }) {
@@ -145,8 +144,6 @@ export default function Stats({ userId, refreshKey }) {
         isRestDayToday={isRestDayToday}
         studiedToday={studiedToday}
       />
-
-      <Heatmap dailyData={dailyData} goalMinutes={goalMinutes} />
 
       <Charts sessions={sessions} ramos={ramos} goalMinutes={goalMinutes} />
     </div>

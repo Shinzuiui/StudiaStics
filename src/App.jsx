@@ -5,6 +5,7 @@ import Auth from './components/Auth'
 import SessionForm from './components/SessionForm'
 import History from './components/History'
 import Stats from './components/Stats'
+import TodaySummary from './components/TodaySummary'
 import ThemeToggle from './components/ThemeToggle'
 import DesignToggle from './components/DesignToggle'
 import { useToast } from './components/Toast'
@@ -112,28 +113,48 @@ function App() {
     }
   }, [pomoRunning, pomoSecondsLeft, pomoPhase, timerRunning, timerSeconds])
 
-  // Detección de sesión interrumpida al cargar la aplicación (por pantallazo azul, corte de luz o cierre)
+  // Referencias con el valor actual (para listeners globales sin recrearlos cada segundo)
+  const timerRunningRef = useRef(timerRunning)
+  const pomoRunningRef = useRef(pomoRunning)
+  const timerSecondsRef = useRef(timerSeconds)
+  const sessionRef = useRef(session)
+
+  useEffect(() => { timerRunningRef.current = timerRunning }, [timerRunning])
+  useEffect(() => { pomoRunningRef.current = pomoRunning }, [pomoRunning])
+  useEffect(() => { timerSecondsRef.current = timerSeconds }, [timerSeconds])
+  useEffect(() => { sessionRef.current = session }, [session])
+
+  // Detección de sesión interrumpida (pantallazo azul, corte de luz, navegador cerrado a la fuerza).
+  // IMPORTANTE: se ejecuta UNA sola vez por carga de página. Supabase vuelve a emitir la sesión
+  // cada vez que la pestaña recupera el foco, y antes eso disparaba el banner al cambiar de pestaña.
+  const recoveryCheckedRef = useRef(false)
+  const userIdForRecovery = session?.user?.id
   useEffect(() => {
-    if (!session?.user?.id) return
-    const key = `studiastics_active_timer_${session.user.id}`
+    if (!userIdForRecovery || recoveryCheckedRef.current) return
+    recoveryCheckedRef.current = true
+
+    // Si ya hay un cronómetro con tiempo en esta pestaña, no hay nada que recuperar
+    if (timerSecondsRef.current > 0) return
+
+    const key = `studiastics_active_timer_${userIdForRecovery}`
     try {
       const saved = localStorage.getItem(key)
-      if (saved) {
-        const parsed = JSON.parse(saved)
-        // Detectar si hay al menos 5 segundos acumulados pendientes de guardar
-        if (parsed && typeof parsed.seconds === 'number' && parsed.seconds >= 5) {
-          setRecoveredSession(parsed)
-        }
+      if (!saved) return
+      const parsed = JSON.parse(saved)
+      if (parsed && typeof parsed.seconds === 'number' && parsed.seconds >= 5) {
+        setRecoveredSession(parsed)
+      } else {
+        localStorage.removeItem(key)
       }
     } catch (e) {
       console.warn('Error al leer respaldo de sesión previa:', e)
     }
-  }, [session])
+  }, [userIdForRecovery])
 
-  // Rastrear si el usuario empezó a correr el timer en la sesión actual para no borrar nada al cargar
+  // Rastrear si el usuario empezó a correr el timer en esta carga para no borrar respaldos ajenos al iniciar
   const timerStartedRef = useRef(false)
 
-  // Auto-respaldo continuo en localStorage mientras el cronómetro corre
+  // Auto-respaldo continuo en localStorage mientras haya tiempo sin guardar
   useEffect(() => {
     if (!session?.user?.id) return
     const key = `studiastics_active_timer_${session.user.id}`
@@ -147,55 +168,38 @@ function App() {
         timestamp: Date.now(),
       }))
     } else if (timerStartedRef.current && timerSeconds === 0 && !timerRunning) {
-      // El temporizador estuvo activo en esta sesión y fue reiniciado/guardado
+      // El cronómetro de esta carga fue guardado o reiniciado
       timerStartedRef.current = false
       localStorage.removeItem(key)
     }
   }, [timerSeconds, timerRunning, currentRamoId, currentRamoName, session])
 
-  // Referencias para que beforeunload siempre tenga el valor actual sin recrear el listener cada segundo
-  const timerRunningRef = useRef(timerRunning)
-  const pomoRunningRef = useRef(pomoRunning)
-  const timerSecondsRef = useRef(timerSeconds)
-  const currentRamoIdRef = useRef(currentRamoId)
-  const currentRamoNameRef = useRef(currentRamoName)
-  const sessionRef = useRef(session)
-
-  useEffect(() => { timerRunningRef.current = timerRunning }, [timerRunning])
-  useEffect(() => { pomoRunningRef.current = pomoRunning }, [pomoRunning])
-  useEffect(() => { timerSecondsRef.current = timerSeconds }, [timerSeconds])
-  useEffect(() => { currentRamoIdRef.current = currentRamoId }, [currentRamoId])
-  useEffect(() => { currentRamoNameRef.current = currentRamoName }, [currentRamoName])
-  useEffect(() => { sessionRef.current = session }, [session])
-
-  // Advertencia antes de cerrar o recargar si el tiempo está corriendo, y sincronización a localStorage
+  // Advertencia nativa al cerrar/recargar si hay tiempo sin guardar, y limpieza en cierre voluntario
   useEffect(() => {
     const handleBeforeUnload = (e) => {
-      const isRunning = timerRunningRef.current || pomoRunningRef.current
-      const seconds = timerSecondsRef.current
-      const currentSession = sessionRef.current
-
-      // Guardar el tiempo actual en localStorage antes de que la pestaña se cierre
-      if (currentSession?.user?.id && seconds > 0) {
-        const key = `studiastics_active_timer_${currentSession.user.id}`
-        localStorage.setItem(key, JSON.stringify({
-          seconds: seconds,
-          ramoId: currentRamoIdRef.current,
-          ramoNombre: currentRamoNameRef.current,
-          timestamp: Date.now(),
-        }))
-      }
-
-      // Si el tiempo está en play (libre o pomodoro), mostrar la advertencia nativa del navegador
-      if (isRunning) {
+      const hasUnsavedTime = timerRunningRef.current || pomoRunningRef.current || timerSecondsRef.current > 0
+      if (hasUnsavedTime) {
         e.preventDefault()
         e.returnValue = ''
         return ''
       }
     }
 
+    // 'pagehide' solo se dispara si la página se descarga de forma normal (el usuario aceptó salir).
+    // En un pantallazo azul o corte de luz NO se dispara, así el respaldo sobrevive y se ofrece recuperarlo.
+    const handlePageHide = () => {
+      const userId = sessionRef.current?.user?.id
+      if (userId) {
+        localStorage.removeItem(`studiastics_active_timer_${userId}`)
+      }
+    }
+
     window.addEventListener('beforeunload', handleBeforeUnload)
-    return () => window.removeEventListener('beforeunload', handleBeforeUnload)
+    window.addEventListener('pagehide', handlePageHide)
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload)
+      window.removeEventListener('pagehide', handlePageHide)
+    }
   }, [])
 
   if (!session) {
@@ -355,6 +359,18 @@ function App() {
               setPomoConfig={setPomoConfig}
               pomoSecondsLeft={pomoSecondsLeft}
               setPomoSecondsLeft={setPomoSecondsLeft}
+            />
+          )}
+          {activeTab === 'registrar' && (
+            <TodaySummary
+              userId={userId}
+              refreshKey={refreshKey}
+              liveSeconds={
+                timerSeconds +
+                (pomoPhase === 'study' ? Math.max(0, pomoConfig.study * 60 - pomoSecondsLeft) : 0)
+              }
+              liveRamoId={currentRamoId}
+              liveRamoName={currentRamoName}
             />
           )}
           {activeTab === 'historial' && (
