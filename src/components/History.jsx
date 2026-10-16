@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../supabaseClient'
 import { useToast } from './Toast'
+import { formatMinutes } from '../utils'
 
 export default function History({ userId, refreshKey }) {
   const [sesiones, setSesiones] = useState([])
@@ -64,11 +65,33 @@ export default function History({ userId, refreshKey }) {
 
       {Object.entries(byDate).map(([fecha, items]) => {
         const totalMin = items.reduce((sum, s) => sum + s.duracion_minutos, 0)
+
+        // Total acumulado por ramo en este día (ej: mañana + tarde del mismo ramo)
+        const porRamo = Object.values(
+          items.reduce((acc, s) => {
+            const key = s.ramos?.nombre || 'Sin ramo'
+            acc[key] = acc[key] || { nombre: key, color: s.ramos?.color || '#999', minutos: 0, count: 0 }
+            acc[key].minutos += s.duracion_minutos
+            acc[key].count += 1
+            return acc
+          }, {})
+        ).sort((a, b) => b.minutos - a.minutos)
+
         return (
           <div key={fecha} className="day-block">
             <div className="day-header">
               <span>{fecha}</span>
               <span>{Math.floor(totalMin / 60)}h {totalMin % 60}m</span>
+            </div>
+            <div className="day-ramo-totals">
+              {porRamo.map((r) => (
+                <span key={r.nombre} className="day-ramo-chip" style={{ '--chip-color': r.color }}>
+                  <span className="dot" style={{ background: r.color }} />
+                  {r.nombre}
+                  <strong>{formatMinutes(r.minutos)}</strong>
+                  {r.count > 1 && <span className="day-ramo-count">×{r.count}</span>}
+                </span>
+              ))}
             </div>
             <ul>
               {items.map((s) => (
